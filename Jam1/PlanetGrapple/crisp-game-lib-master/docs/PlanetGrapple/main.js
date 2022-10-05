@@ -81,7 +81,7 @@ let clockwise
 function update() {
   // The init function running at startup
 if (!ticks) {
-
+  playBgm()
   starsInit()
   playerInit()
 }
@@ -158,7 +158,8 @@ function playerUpdate()
     let d = Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1))
     if (d < planet.size)
     {
-
+      stopBgm();
+      play('explosion')
       end(' you crashed into a planet ')
       
     }
@@ -172,12 +173,18 @@ function playerUpdate()
     let closestDistance = null
     Planets.forEach((planet) =>
     {
+      
       let x2 = planet.pos.x
       let y2 = planet.pos.y
       let x1 = player.pos.x
       let y1 = player.pos.y 
       let d = Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1))
-      if (d < closestDistance || closestDistance == null){closestPlanet = planet; closestDistance = d;}
+      if (d < closestDistance || closestDistance == null)
+      {
+        play('hit')
+        closestPlanet = planet; 
+        closestDistance = d;
+      }
     })
     playerGrapplePlanet = closestPlanet;
     playerGrapplePlanetDistance = closestDistance;
@@ -239,10 +246,12 @@ function playerUpdate()
   if (player.pos.x == 0 || player.pos.x == G.WIDTH)
   {
     deltaX = -deltaX
+    play('select', {volume : .1})
   }
   if (player.pos.y == 0 || player.pos.y == G.HEIGHT)
   {
     deltaY = -deltaY
+    play('select', {volume : .1})
   }
 }
 
