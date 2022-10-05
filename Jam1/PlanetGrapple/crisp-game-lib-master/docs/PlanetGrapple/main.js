@@ -13,7 +13,12 @@ const G = {
 // http://localhost:4000/?PlanetGrapple
 
 options = {
-  viewSize: {x: G.WIDTH, y: G.HEIGHT}
+  viewSize: {x: G.WIDTH, y: G.HEIGHT},
+  theme : 'crt',
+  
+  isCapturing: true,
+  isCapturingGameCanvasOnly : true,
+  captureCanvasScale : 1,
 };
 
 characters = [
