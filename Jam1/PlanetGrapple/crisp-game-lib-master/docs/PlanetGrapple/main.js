@@ -33,6 +33,7 @@ cc  cc
   * pos: Vector,
   * speed: number,
   * size : number
+  * transformFlag : boolean
   * }} Planet
   */
 
@@ -40,8 +41,8 @@ cc  cc
 * @type  { Planet [] }
 */
 let Planets = []
-Planets[0] = {pos : vec(G.WIDTH/2,G.HEIGHT/2 - 60),speed : 1,size : 10}
-Planets[1] = {pos : vec(G.WIDTH/2 + 10,G.HEIGHT/2 + 25),speed : 1,size : 10}
+Planets[0] = {pos : vec(G.WIDTH/2,G.HEIGHT/2 - 60),speed : .3,size : 10 , transformFlag : true}
+Planets[1] = {pos : vec(G.WIDTH/2 + 10,G.HEIGHT/2 + 25),speed : .3,size : 10, transformFlag : true}
 
 /**
 * @typedef {{
@@ -58,6 +59,7 @@ let stars;
 /**
  * @typedef {{
  * pos: Vector,
+ * speed : number,
  * }} Player
  */
 
@@ -82,12 +84,25 @@ if (!ticks) {
 
   starsInit()
   playerInit()
-
 }
 //update every 1/60th
+
 starsUpdate();
 playerUpdate();
 planetsUpdate();
+uiUpdate();
+}
+
+function uiUpdate()
+{
+  let temp = score.toString()
+  if (ticks%30 == 0)
+  {
+    addScore(1)
+  }
+  color('purple')
+  text(temp, G.WIDTH - 25, 6)
+  
 }
 
 function planetsUpdate()
@@ -95,15 +110,31 @@ function planetsUpdate()
   
   
   Planets.forEach((s) => {
+
+    s.pos.y += s.speed;
     // Move the star downwards
     // Bring the star back to top once it's past the bottom of the screen
-    s.pos.wrap(0, G.WIDTH, 0, G.HEIGHT);
+    //let temp = s.pos.wrap(0, G.WIDTH, -30, G.HEIGHT + 30);
+    
+    if (s.pos.y > G.HEIGHT+30)
+    {
+      s.size = rnd(5,18)
+      s.speed = rnd(.3,.5)
+      s.pos.y = -30
+      s.pos.x = rnd(30,G.WIDTH-30 )
+    }
+
+
+    
+
     
     // Choose a color to draw
     color('green')
-    // Draw the star as a square of size 1
     arc(s.pos.x,s.pos.y,s.size,3,0,360)
     
+
+
+
 });
 
 }
@@ -111,11 +142,28 @@ function planetsUpdate()
 function playerInit()
 {
   player = {
-    pos: vec(G.WIDTH * 0.5, G.HEIGHT * 0.5)
+    pos: vec(G.WIDTH * 0.5, G.HEIGHT * 0.5),
+    speed : 2
   };
 }
 function playerUpdate()
 {
+
+  Planets.forEach((planet) =>
+  {
+    let x2 = planet.pos.x
+    let y2 = planet.pos.y
+    let x1 = player.pos.x
+    let y1 = player.pos.y 
+    let d = Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1))
+    if (d < planet.size)
+    {
+
+      end(' you crashed into a planet ')
+      
+    }
+  })
+
   color("black");
   char('a',player.pos);
   if (input.isJustPressed)
@@ -147,13 +195,13 @@ function playerUpdate()
       let preX = player.pos.x
       let preY = player.pos.y
 
-      let theta = .1 // temp value
+      let theta = 1/playerGrapplePlanetDistance * player.speed// temp value
       if (clockwise == false){theta = -theta;}
       let x0 = player.pos.x
       let y0 = player.pos.y
       let xc = playerGrapplePlanet.pos.x
       let yc = playerGrapplePlanet.pos.y
-
+      
 
       color('white')
       
@@ -163,11 +211,15 @@ function playerUpdate()
 
       deltaX = player.pos.x - preX
       deltaY = player.pos.y - preY
- 
+      if (playerGrapplePlanet.pos.y > G.HEIGHT)
+      {
+        playerGrapplePlanet = null
+        playerGrapplePlanetDistance = null;
+      }
       
     }
   }
-  if (!input.isPressed)
+  if (!playerGrapplePlanet)
   {
     if (deltaX && deltaX)
     {
@@ -184,6 +236,14 @@ function playerUpdate()
   
 
   player.pos.clamp(0, G.WIDTH, 0, G.HEIGHT);
+  if (player.pos.x == 0 || player.pos.x == G.WIDTH)
+  {
+    deltaX = -deltaX
+  }
+  if (player.pos.y == 0 || player.pos.y == G.HEIGHT)
+  {
+    deltaY = -deltaY
+  }
 }
 
  function starsUpdate(){
@@ -245,3 +305,5 @@ function determineDirection()// too simple
   }
 
 }
+
+
