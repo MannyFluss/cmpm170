@@ -54,8 +54,7 @@ lllll
 `
   Bb
 b  Bb
-Bb  Bb
-Bb  Bb
+ b  Bb
 b  Bb
   Bb
 `,
@@ -111,11 +110,12 @@ class enemy
   }
   takeDamage()
   {
-    color("yellow");
-    particle(this.position,5,2)
+
     this.hp -= 1;
     if (this.hp <= 0)//death
     {
+      color("red");
+      particle(this.position,5,2)
       enemyUpdateList.delete(this);
     }
   }
@@ -240,14 +240,50 @@ function update()
 
 function updateCards()
 {
-  let cardPos = vec(20,20)
+  //attributes
+  let cardPos = vec(G.WIDTH/2-10,G.HEIGHT-25)
+  let cardPos2 = vec(G.WIDTH/2-10-30,G.HEIGHT-25)
+  let cardPos3 = vec(G.WIDTH/2-10+30,G.HEIGHT-25)
+
+  //lightning card
+  
+
+
   color("black")
   rect(cardPos.x,cardPos.y,20);
   color("light_cyan");
-  rect(cardPos.x+ 1, cardPos.y+1,18);
+  let collision = rect(cardPos.x+ 1, cardPos.y+1,18).isColliding.rect;
+  if (collision && input.isJustPressed)//clicking this card
+  {
+    
+  }
   color("black");
   char('b',vec(cardPos.x+10,cardPos.y+10),{scale:vec(2,2)});
-  
+  //bomb card
+  color("black")
+  rect(cardPos2.x,cardPos2.y,20);
+  color("light_cyan");
+  let collision2 = rect(cardPos2.x+ 1, cardPos2.y+1,18).isColliding.rect;
+  if (collision2 && input.isJustPressed)//clicking this card
+  {
+    
+  }
+  color("black");
+  char('c',vec(cardPos2.x+8,cardPos2.y+9),{scale:vec(2,2)});
+  //speed card
+  color("black");
+  char('b',vec(cardPos.x+10,cardPos.y+10),{scale:vec(2,2)});
+  //bomb card
+  color("black")
+  rect(cardPos3.x,cardPos3.y,20);
+  color("light_cyan");
+  let collision3 = rect(cardPos3.x+ 1, cardPos3.y+1,18).isColliding.rect;
+  if (collision3 && input.isJustPressed)//clicking this card
+  {
+    
+  }
+  color("black");
+  char('e',vec(cardPos3.x+10,cardPos3.y+9),{scale:vec(2,2)});
 }
 
 
