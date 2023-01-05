@@ -66,8 +66,52 @@ b  Bb
     ,
     ];
 
+var enemyUpdateList = [];
 var updateList = [];
 //class declarations
+
+class enemy
+{
+  constructor()
+  {
+    //attributes
+    this.speed = 0
+    this.sprite = 'a';
+    this.hp = 5;
+
+    enemyUpdateList.push(this);
+    this.position = vec(10,10);
+    this.target = vec(G.WIDTH/2,G.HEIGHT/2);
+    this.targetAngle = Math.atan2(this.target.y-this.position.y/2, this.target.x-this.position.x/2 )
+    this.targetAngleVector = vec(Math.cos(this.targetAngle) * this.speed,Math.sin(this.targetAngle) * this.speed)
+  }
+  update()
+  {
+    this.position.x += this.targetAngleVector.x;
+    this.position.y += this.targetAngleVector.y;
+    color('red')
+    bar(vec(this.position.x,this.position.y-5),3,2,0)
+    color('black');
+    const object = char(this.sprite,this.position,{scale : vec(1,1)}).isColliding.char.b;
+    console.log(object)
+    //this.collide = char(this.sprite,this.position).isColliding.char.b;
+    
+    if (object)
+    {
+      
+      this.takeDamage();
+    }
+    
+
+  }
+  takeDamage()
+  {
+    color("yellow");
+    particle(this.position,5,2)
+  }
+
+}
+
 class LightningBolt
 {
   
@@ -78,12 +122,12 @@ class LightningBolt
     this.targetAngleVector = vec(Math.cos(this.targetAngle),Math.sin(this.targetAngle))
     updateList.push(this)//global list to update
     this.position = vec(G.WIDTH/2,G.HEIGHT/2);
-    console.log(this.targetAngle)
+    
   }
   update()
   {
     color('black');
-    char('e',this.position,{scale : vec(3,3)})
+    char('b',this.position).isColliding.char.a
     this.position.x += this.targetAngleVector.x;
     this.position.y += this.targetAngleVector.y;
     
@@ -100,8 +144,8 @@ var mousePosition = vec(0,0);
 function start()
 {
   mousePosition = vec(input.pos.x,input.pos.y)
-  var test = new LightningBolt(mousePosition);
-  console.log(updateList)
+  //var test = new LightningBolt(mousePosition);
+  
 }
 
 function update()
@@ -111,10 +155,10 @@ function update()
         start();    
     }
     color('black')
-    char('a',G.WIDTH/2,G.HEIGHT/2+50,{scale : vec(3,3)})
-    char('b',G.WIDTH/2,G.HEIGHT/2+25,{scale : vec(3,3)})
-    char('c',G.WIDTH/2,G.HEIGHT/2,{scale : vec(3,3)})
-    char('d',G.WIDTH/2,G.HEIGHT/2 - 25,{scale : vec(3,3)})
+    //char('a',G.WIDTH/2,G.HEIGHT/2+50,{scale : vec(3,3)})
+    //char('b',G.WIDTH/2,G.HEIGHT/2+25,{scale : vec(3,3)})
+    //char('c',G.WIDTH/2,G.HEIGHT/2,{scale : vec(3,3)})
+    char('d',G.WIDTH/2,G.HEIGHT/2 ,{scale : vec(3,3)})
     //char('e',G.WIDTH/2,G.HEIGHT/2 - 50,{scale : vec(3,3)})
     objectsUpdate()
 
@@ -123,6 +167,13 @@ function update()
     updateList.forEach(element => {
       element.update();
     });
+    enemyUpdateList.forEach(element => {
+      element.update();
+    });
+    if (ticks%600 ==0)
+    {
+      new enemy();
+    }
 
 }
 
