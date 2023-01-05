@@ -8,7 +8,7 @@ const G = { //constant global variables
     //aspect ratio 9 : 16
 	WIDTH: 9 * SIZE,
 	HEIGHT: 16 * SIZE,
-
+  
 };
 options = {
     viewSize: {x: G.WIDTH, y: G.HEIGHT},
@@ -59,30 +59,37 @@ Bb  Bb
 b  Bb
   Bb
 `,
-
+`
+ r
+rrr L
+lyy l
+lll l
+bbbbl
+bbb
+`
 
 
 
     ,
     ];
 
-var enemyUpdateList = [];
-var updateList = [];
+
 //class declarations
 
 class enemy
 {
-  constructor()
+  constructor(_position = vec(0,0))
   {
     //attributes
-    this.speed = 0
+    this.speed = .2
     this.sprite = 'a';
     this.hp = 5;
+    this.maxHp = this.hp
 
-    enemyUpdateList.push(this);
-    this.position = vec(10,10);
+    enemyUpdateList.add(this);
+    this.position = _position;
     this.target = vec(G.WIDTH/2,G.HEIGHT/2);
-    this.targetAngle = Math.atan2(this.target.y-this.position.y/2, this.target.x-this.position.x/2 )
+    this.targetAngle = Math.atan2(this.target.y-this.position.y, this.target.x-this.position.x )
     this.targetAngleVector = vec(Math.cos(this.targetAngle) * this.speed,Math.sin(this.targetAngle) * this.speed)
   }
   update()
@@ -93,12 +100,10 @@ class enemy
     bar(vec(this.position.x,this.position.y-5),3,2,0)
     color('black');
     const object = char(this.sprite,this.position,{scale : vec(1,1)}).isColliding.char.b;
-    console.log(object)
+    //console.log(object)
     //this.collide = char(this.sprite,this.position).isColliding.char.b;
-    
     if (object)
     {
-      
       this.takeDamage();
     }
     
@@ -108,6 +113,11 @@ class enemy
   {
     color("yellow");
     particle(this.position,5,2)
+    this.hp -= 1;
+    if (this.hp <= 0)//death
+    {
+      enemyUpdateList.delete(this);
+    }
   }
 
 }
@@ -120,7 +130,7 @@ class LightningBolt
     this.target = _target;
     this.targetAngle = Math.atan2(_target.y-G.HEIGHT/2, _target.x-G.WIDTH/2 )
     this.targetAngleVector = vec(Math.cos(this.targetAngle),Math.sin(this.targetAngle))
-    updateList.push(this)//global list to update
+    updateList.add(this)//global list to update
     this.position = vec(G.WIDTH/2,G.HEIGHT/2);
     
   }
@@ -130,7 +140,14 @@ class LightningBolt
     char('b',this.position).isColliding.char.a
     this.position.x += this.targetAngleVector.x;
     this.position.y += this.targetAngleVector.y;
-    
+    if(onScreen(this.position)==false)
+    {
+      this.offScreen();
+    }
+  }
+  offScreen()
+  {
+    updateList.delete(this);
   }
 };
 
@@ -140,12 +157,34 @@ class LightningBolt
 //global variables
 var mousePosition = vec(0,0);
 
+var currentXp = 100.0
+var levelUpXp = 500.0
+var attackInterval = 4;
+
+
+var attackList = [1];
+
+var enemyUpdateList = new Set();
+var updateList = new Set();
 
 function start()
 {
   mousePosition = vec(input.pos.x,input.pos.y)
   //var test = new LightningBolt(mousePosition);
   
+}
+
+function onScreen(_point)
+{
+  if(_point.x < 0 || _point.x > G.WIDTH)
+  {
+    return false;
+  }
+  if(_point.y < 0 || _point.y > G.HEIGHT)
+  {
+    return false;
+  }
+  return true;
 }
 
 function update()
@@ -170,26 +209,59 @@ function update()
     enemyUpdateList.forEach(element => {
       element.update();
     });
+    //enemy spawns
     if (ticks%600 ==0)
     {
-      new enemy();
+      let angle = Math.random()*Math.PI*2;
+      let radius = 50;
+      let pos = vec((Math.cos(angle)*radius)+G.WIDTH/2,(Math.sin(angle)*radius)+G.HEIGHT/2);
+      console.log(pos)
+      new enemy(pos);
     }
-
+    //player attackInterval
+    if(ticks%(attackInterval*60)==0)
+    {
+      fireProjectiles();
+    }
+    //experienceBar
+    color("green")
+    let barAmnt = (currentXp/levelUpXp) * G.WIDTH-10
+    bar(G.WIDTH/2  ,20,barAmnt ,10,0)
+    color("black")
+    text("XP",G.WIDTH/2,20)
+    currentXp +=1;
+    if (currentXp >= levelUpXp)//levle up
+    {
+      currentXp = 0;
+    }
+    updateCards();
+    Animation.
 }
+
+function updateCards()
+{
+  let cardPos = vec(20,20)
+  color("black")
+  rect(cardPos.x,cardPos.y,20);
+  color("light_cyan");
+  rect(cardPos.x+ 1, cardPos.y+1,18);
+  color("black")
+  char('b',vec(cardPos.x+10,cardPos.y+10),{scale:vec(2,2)})
+  
+}
+
 
 function handleClicks()
 {
   if (input.isJustPressed)
   {
     fireProjectiles()
-    new LightningBolt(mousePosition)
   }
 }
 
 function fireProjectiles()
 {   //this will execute all of the attacks in the list
-  
-
+  new LightningBolt(mousePosition)
 }
 
 function objectsUpdate()
