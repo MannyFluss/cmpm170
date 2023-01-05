@@ -219,7 +219,7 @@ function update()
       new enemy(pos);
     }
     //player attackInterval
-    if(ticks%(attackInterval*60)==0)
+    if(ticks%Math.round(attackInterval*60)==0)
     {
       fireProjectiles();
     }
@@ -252,10 +252,11 @@ function updateCards()
   color("black")
   rect(cardPos.x,cardPos.y,20);
   color("light_cyan");
-  let collision = rect(cardPos.x+ 1, cardPos.y+1,18).isColliding.rect;
+  let collision = rect(cardPos.x+ 1, cardPos.y+1,18).isColliding.rect.red;
   if (collision && input.isJustPressed)//clicking this card
   {
-    
+    attackList.push(1);
+    console.log("added lightning attack")
   }
   color("black");
   char('b',vec(cardPos.x+10,cardPos.y+10),{scale:vec(2,2)});
@@ -263,10 +264,11 @@ function updateCards()
   color("black")
   rect(cardPos2.x,cardPos2.y,20);
   color("light_cyan");
-  let collision2 = rect(cardPos2.x+ 1, cardPos2.y+1,18).isColliding.rect;
+  let collision2 = rect(cardPos2.x+ 1, cardPos2.y+1,18).isColliding.rect.red;
   if (collision2 && input.isJustPressed)//clicking this card
   {
-    
+    attackList.push(2);
+    console.log("added bomb attack")
   }
   color("black");
   char('c',vec(cardPos2.x+8,cardPos2.y+9),{scale:vec(2,2)});
@@ -277,10 +279,16 @@ function updateCards()
   color("black")
   rect(cardPos3.x,cardPos3.y,20);
   color("light_cyan");
-  let collision3 = rect(cardPos3.x+ 1, cardPos3.y+1,18).isColliding.rect;
+  let collision3 = rect(cardPos3.x+ 1, cardPos3.y+1,18).isColliding.rect.red;
   if (collision3 && input.isJustPressed)//clicking this card
   {
-    
+    attackInterval -= .1
+    if (attackInterval <= 0)
+    {
+      attackInterval = .1
+      
+    }
+    console.log("attack time down")
   }
   color("black");
   char('e',vec(cardPos3.x+10,cardPos3.y+9),{scale:vec(2,2)});
@@ -289,15 +297,26 @@ function updateCards()
 
 function handleClicks()
 {
-  if (input.isJustPressed)
-  {
-    fireProjectiles()
-  }
+  // if (input.isJustPressed)
+  // {
+  //   fireProjectiles()
+  // }
 }
 
 function fireProjectiles()
 {   //this will execute all of the attacks in the list
-  new LightningBolt(mousePosition)
+  //new LightningBolt(mousePosition)
+  let elementCount = 0;
+  attackList.forEach(element => {
+    switch(element)
+    {
+      case 1:
+        setTimeout(()=>{ new LightningBolt(mousePosition);},250 * elementCount)
+        break;
+    }
+    elementCount += 1;
+  });
+
 }
 
 function objectsUpdate()
