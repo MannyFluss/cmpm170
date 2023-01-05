@@ -235,7 +235,7 @@ function update()
       currentXp = 0;
     }
     updateCards();
-    Animation.
+    
 }
 
 function updateCards()
@@ -245,8 +245,8 @@ function updateCards()
   rect(cardPos.x,cardPos.y,20);
   color("light_cyan");
   rect(cardPos.x+ 1, cardPos.y+1,18);
-  color("black")
-  char('b',vec(cardPos.x+10,cardPos.y+10),{scale:vec(2,2)})
+  color("black");
+  char('b',vec(cardPos.x+10,cardPos.y+10),{scale:vec(2,2)});
   
 }
 
