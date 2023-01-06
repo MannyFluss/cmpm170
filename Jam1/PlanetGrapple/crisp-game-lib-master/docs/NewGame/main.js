@@ -21,9 +21,44 @@ const G = { //constant global variables
 	HEIGHT: 16 * SIZE,
   
 };
-const S =
+const S = //statboard
 {
+  HPUPGRADE1 : 1,
+  SPEEDUPGRADE1 : 0.0,
 
+  HPUPGRADE2 : 2,
+  SPEEDUPGRADE2 : 0.001,
+
+  HPUPGRADE3 : 6,
+  SPEEDUPGRADE3 : 0.003,
+
+  HPUPGRADE4 : 4,
+  SPEEDUPGRADE4 : 0.003,
+
+  MINHP : 3,
+  MINSPEED : .01,
+
+  BOMBDAMAGE : 2,
+  LIGHTNINGDAMAGE : 1,
+
+
+  ATTACKDOWNAMNT : .35,
+  XPMULTIPLIERONDEATH : 5,
+
+
+  GOBLINSLEVEL3 : 8,
+  GOBLINSLEVEL10 : 20,
+  GOBLINSLEVEL20 : 40,
+  GOBLINSLEVEL50 : 55,
+
+  SPAWNRADIUS : 60,
+
+  CYCLETIME : 20,  
+  CYCLESPERDOWN : 2,
+  CYCLESPERDOWNSPAWN : 5,
+  SPAWNINTERVALDOWN : .5,
+  MINSPAWNINTERVAL : 1,
+  MAXGOBLINSPAWN : 5
 };
 
 options = {
@@ -111,16 +146,19 @@ class enemySpawner
 {
   constructor()
   {
+    this.cyclesPast = 1;
+
     this.spawnInterval = 5.0
     this.timeUntilSpawn = this.spawnInterval;
     updateList.add(this);
 
-    this.enemySpeedMin = .01;
-    this.enemySpeedMax = .01;
+    this.enemySpeedMin = S.MINSPEED;
+    this.enemySpeedMax = S.MINSPEED;
     
-    this.enemyHpMin = 5;
-    this.enemyHpMax = 5;
+    this.enemyHpMin = S.MINHP;
+    this.enemyHpMax = S.MINHP;
 
+    this.amountToSpawn = 1;
 
   }
 
@@ -128,13 +166,13 @@ class enemySpawner
   spawnEnemy()
   {
     let angle = Math.random()*Math.PI*2;
-    let radius = 50;
+    let radius = S.SPAWNRADIUS;
     let pos = vec((Math.cos(angle)*radius)+G.WIDTH/2,(Math.sin(angle)*radius)+G.HEIGHT/2);
 
     let _speed = Math.random()*(this.enemySpeedMax-this.enemySpeedMin) + this.enemySpeedMax;
     let min = Math.ceil(this.enemyHpMin);
     let max = Math.floor(this.enemyHpMax);
-    let _hp = round(Math.random()*(max-min) + max);
+    let _hp = round(Math.random()*(max-min) + min);
     new enemy(pos,_speed,_hp);
   }
 
@@ -145,18 +183,60 @@ class enemySpawner
     if (this.timeUntilSpawn <= 0)
     {
       this.timeUntilSpawn = this.spawnInterval;
+      for(let i=0;i<this.amountToSpawn;i++)
+      {
       this.spawnEnemy();
+      }
     }
 
     //difficulty tracker
-    if (ticks%(60*15) == 0)
+    if (ticks%(60*S.CYCLETIME) == 0 && ticks != 0)
     {
       this.fifteenSeconds();
+      console.log("new max hp is :" + this.enemyHpMax);
     }
   }
   fifteenSeconds()//upgrade difficulty
   {
+    console.log("current cycle : " +this.cyclesPast);
+    this.cyclesPast += 1;
+    if (this.cyclesPast%S.CYCLESPERDOWN == 0)
+    {
 
+      this.spawnInterval -= S.SPAWNINTERVALDOWN
+      if (this.spawnInterval <= S.MINSPAWNINTERVAL)
+      {
+        this.spawnInterval = S.MINSPAWNINTERVAL;
+      }
+    }
+    if(this.cyclesPast%S.CYCLESPERDOWNSPAWN)
+    {
+      this.amountToSpawn += 1;
+      if (this.amountToSpawn >= S.MAXGOBLINSPAWN)
+      {
+        this.amountToSpawn = S.MAXGOBLINSPAWN;
+      }
+    }
+    if (this.cyclesPast < 4)
+    {
+      this.enemyHpMax += S.HPUPGRADE1
+      this.enemySpeedMax += S.SPEEDUPGRADE1
+      return
+    }
+    if (this.cyclesPast < 8)
+    {
+      this.enemyHpMax += S.HPUPGRADE2
+      this.enemySpeedMax += S.SPEEDUPGRADE2
+      return
+    }
+    if (this.cyclesPast < 12)
+    {
+      this.enemyHpMax += S.HPUPGRADE3
+      this.enemySpeedMax += S.SPEEDUPGRADE3
+      return
+    }
+    this.enemyHpMax += S.HPUPGRADE4
+    this.enemySpeedMax += S.SPEEDUPGRADE4
   }
 
 }
@@ -203,25 +283,28 @@ class enemy
     //this.collide = char(this.sprite,this.position).isColliding.char.b;
     if (lightningCollider)
     {
-      this.takeDamage();
+      this.takeDamage(S.LIGHTNINGDAMAGE);
     }
     if(bombCollider)
     {
-      console.log("hit by bomb")
-      this.takeDamage();
+      this.takeDamage(S.BOMBDAMAGE);
     }
     
 
   }
-  takeDamage()
+  takeDamage(_damage = 1)
   {
-    console.log("enemy taking damage")
-    this.hp -= 2;
+    this.hp -= _damage;
     color("red");
     particle(this.position,2,1)
+    play("click",{seed:128965234234235}) //enemy gets hit
+
     if (this.hp <= 0)//death
     {
-      currentXp += 5;
+      play("hit",{seed:1})//goblin dies
+
+
+      currentXp += this.maxHp * S.XPMULTIPLIERONDEATH;
       score += this.maxHp;
       color("red");
       particle(this.position,5,2)
@@ -241,6 +324,7 @@ class bomb
     this.target = _target;
     this.bombPosition = vec(this.target.x-1,this.target.y-G.HEIGHT+1);
     updateList.add(this)//global list to update
+    play("select",{seed:1,volume:.25})//bomb start
     
   }
   update()
@@ -265,6 +349,8 @@ class bomb
     ///explode
     color("yellow");
     particle(this.target.x,this.target.y,20,1)
+    play("explosion",{seed:23022533, volume:.25}) //end bomb
+
   }
   offScreen()
   {
@@ -284,6 +370,7 @@ class LightningBolt
     updateList.add(this)//global list to update
     lateUpdateList.add(this)
     this.position = vec(G.WIDTH/2,G.HEIGHT/2);
+    play("click",{seed:7856789807,volume:.5}) //lightning start
     
     //this.sprite = char('b',this.position)
     
@@ -308,11 +395,13 @@ class LightningBolt
     if (collider.isColliding.char.a)
     {
       this.delete();
-      play("click",{volume:.2,})
+      play("hit",{seed:1242,volume:.5})
     }
   }
   delete()
   {
+    //lightning hit
+
     updateList.delete(this);
     lateUpdateList.delete(this);
   }
@@ -342,28 +431,21 @@ var lateUpdateList = new Set();
 function start()
 {
   //reset values
-  //play("explosion",{seed:23022533, volume:.5}) //end bomb
-  //play("click",{seed:128965234234235}) //enemy gets hit
-  //play("click",{seed:7856789807}) //lightning start
-  //play("powerUp",{seed: 1623226344152765365845}) // level up
-  //play("powerUp",{seed:28315356323325232}) // power up choice
-  //play("random",{seed:1242})//game over
-  //play("select",{seed:1,volume:.25})//bomb start
-  //play("hit",{seed:1})//goblin dies
-  //play("hit",{seed:1242})//lightning hit
+  //aaaaaaa
+  
   //playBgm();
   
   
   enemyUpdateList.clear();
   updateList.clear();
   lateUpdateList.clear();
-  attackList = [2];
-  currentXp = 1
-  levelUpXp = 15
+  attackList = [1];
+  currentXp = 0
+  levelUpXp = 5
   currentLevel = 1;
   attackInterval = 4;
   timeUntilattack = attackInterval;
-  levelUpAvailable = true;
+  levelUpAvailable = false;
 
   myEnemySpawner = new enemySpawner();
 
@@ -443,24 +525,26 @@ function update()
 
 function levelUp()
 {
+  play("powerUp",{seed: 1623226344152765365845}) // level up
+
   currentXp = 0;
   levelUpAvailable = true;
   if (currentLevel < 3)
   {
-    levelUpXp = 5 * 5;
+    levelUpXp = 5 * S.GOBLINSLEVEL3;
     return;
   }
   if (currentLevel < 10)
   {
-    levelUpXp = 5 * 15;
+    levelUpXp = 5 * S.GOBLINSLEVEL10;
     return;
   }
   if (currentLevel < 20)
   {
-    levelUpXp = 5 * 50;
+    levelUpXp = 5 * S.GOBLINSLEVEL20;
     return;
   }
-  levelUpXp = 5 * currentLevel * 50
+  levelUpXp = 5 * currentLevel * S.GOBLINSLEVEL50
 
 }
 
@@ -480,6 +564,7 @@ function updateTower()
     rect(G.WIDTH/2-40,G.HEIGHT/2-10,80,40)
     color("light_cyan")
     rect(G.WIDTH/2-38,G.HEIGHT/2-8,76,36)
+    play("random",{seed:1242})//game over
     
     end("Game Over!")
   }
@@ -510,6 +595,8 @@ function updateCards()
     attackList.push(1);
     console.log("added lightning attack")
     levelUpAvailable = false;
+    play("powerUp",{seed:28315356323325232}) // power up choice
+
   }
   color("black");
   char('b',vec(cardPos.x+10,cardPos.y+10),{scale:vec(2,2)});
@@ -523,6 +610,7 @@ function updateCards()
     attackList.push(2);
     console.log("added bomb attack")
     levelUpAvailable = false;
+    play("powerUp",{seed:28315356323325232}) // power up choice
 
   }
   color("black");
@@ -538,10 +626,13 @@ function updateCards()
   if (collision3 && input.isJustPressed)//clicking this card
   {
     levelUpAvailable = false;
-    attackInterval -= .1
+    attackInterval -= S.ATTACKDOWNAMNT
+    play("powerUp",{seed:28315356323325232}) // power up choice
+
     if (attackInterval <= 0)
     {
       attackInterval = .1
+
       
     }
     console.log("attack time down")
