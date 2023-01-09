@@ -43,6 +43,8 @@ const S = //statboard
 
 
   ATTACKDOWNAMNT : .35,
+  LOWESTATTACKSPEED : 1.5,
+
   XPMULTIPLIERONDEATH : 5,
 
 
@@ -53,13 +55,32 @@ const S = //statboard
 
   SPAWNRADIUS : 60,
 
-  CYCLETIME : 20,  
-  CYCLESPERDOWN : 2,
-  CYCLESPERDOWNSPAWN : 5,
+  CYCLETIME : 25,  
+  CYCLESPERDOWN : 4, // how many cycles for the time to go down
+  CYCLESPERDOWNSPAWN : 3, //cycles for the spawn rate to go up
   SPAWNINTERVALDOWN : .5,
   MINSPAWNINTERVAL : 1,
-  MAXGOBLINSPAWN : 5
+  MAXGOBLINSPAWN : 5,
+
+  SPRITELIST : ['a','f','h','i','j','k'],
+
+
 };
+
+var LightningBoltStats = 
+{
+  level : 1,
+  damage : 1,
+  count : 1,
+
+}
+var bombStats = 
+{
+  level : 0,
+  damage : 1,
+  count : 0,
+
+}
 
 options = {
     viewSize: {x: G.WIDTH, y: G.HEIGHT},
@@ -68,15 +89,16 @@ options = {
 //  y: yellow, p: purple, c: cyan
 //  L: light_black, R: light_red, G: light_green, B: light_blue
 //  Y: light_yellow, P: light_purple, C: light_cyan)
-  characters = [//a
+characters = [//a
 `
-   GG
- grg  
-ggg   
-  Lg
-  Lg
-  Gg
+GG    
+ grg   
+  ggg   
+ gL  
+ gL 
+ gG
 `
+
 ,
 `
    yyY
@@ -110,13 +132,12 @@ b  Bb
   Bb
 `,
 `
-   r 
-L rrr
-l yyL
-l LLL
-lbbbb
-  bbb 
-
+ r
+rrr
+LYY L
+LLL l
+BBBBl
+BBB 
 `
 ,//G
 `
@@ -128,14 +149,38 @@ lbbbb
 `
 ,
 `
-   
-  yy
- yyY
-  yyY
-   yY
-  yY  
+ BB
+BBBB
+YlYl
+bbb  L
+llllL
+b b
+` 
+,
+`
+gG l l 
+Gg GGG
+  GGr
+ GGG
+GG  g
+G g
 `,
-
+`
+Y
+ LL  l
+LLLLLl
+LllLLl
+l  l l 
+ ll
+`,
+`
+     r
+ g lg
+G  gg
+g g 
+G  G 
+ gGg
+`
 
     ,
     ];
@@ -173,7 +218,9 @@ class enemySpawner
     let min = Math.ceil(this.enemyHpMin);
     let max = Math.floor(this.enemyHpMax);
     let _hp = round(Math.random()*(max-min) + min);
-    new enemy(pos,_speed,_hp);
+
+    const sprite = S.SPRITELIST[Math.floor(Math.random()*S.SPRITELIST.length)];
+    new enemy(pos,_speed,_hp,sprite);
   }
 
   update()
@@ -193,7 +240,7 @@ class enemySpawner
     if (ticks%(60*S.CYCLETIME) == 0 && ticks != 0)
     {
       this.fifteenSeconds();
-      console.log("new max hp is :" + this.enemyHpMax);
+      console.log("new time between cycles and time between spawn: "+this.spawnInterval+ " " + this.amountToSpawn );
     }
   }
   fifteenSeconds()//upgrade difficulty
@@ -206,10 +253,11 @@ class enemySpawner
       this.spawnInterval -= S.SPAWNINTERVALDOWN
       if (this.spawnInterval <= S.MINSPAWNINTERVAL)
       {
+        console.log("min spawn time hit")
         this.spawnInterval = S.MINSPAWNINTERVAL;
       }
     }
-    if(this.cyclesPast%S.CYCLESPERDOWNSPAWN)
+    if(this.cyclesPast%S.CYCLESPERDOWNSPAWN == 0)
     {
       this.amountToSpawn += 1;
       if (this.amountToSpawn >= S.MAXGOBLINSPAWN)
@@ -272,10 +320,10 @@ class enemy
     let object;
     if (this.rotation == -1)
     {
-      object = char(this.sprite,this.position,{scale : vec(1,1), mirror:{x:-1,y:1}})
+      object = char(this.sprite,this.position,{scale : vec(1,1), mirror:{x:1,y:1}})
     }else
     {
-      object = char(this.sprite,this.position,{scale : vec(1,1), mirror:{x:1,y:1}})
+      object = char(this.sprite,this.position,{scale : vec(1,1), mirror:{x:-1,y:1}})
     }
     let lightningCollider = object.isColliding.char.b;
     let bombCollider = object.isColliding.char.g;
@@ -283,11 +331,11 @@ class enemy
     //this.collide = char(this.sprite,this.position).isColliding.char.b;
     if (lightningCollider)
     {
-      this.takeDamage(S.LIGHTNINGDAMAGE);
+      this.takeDamage(LightningBoltStats.damage);
     }
     if(bombCollider)
     {
-      this.takeDamage(S.BOMBDAMAGE);
+      this.takeDamage(bombStats.damage);
     }
     
 
@@ -391,8 +439,14 @@ class LightningBolt
 
   lateUpdate()
   {
-    let collider = char('h',this.position)
-    if (collider.isColliding.char.a)
+    let collider = char('b',this.position)
+    let collision = (collider.isColliding.char.a ||
+                      collider.isColliding.char.f ||
+                      collider.isColliding.char.h ||
+                      collider.isColliding.char.i ||
+                      collider.isColliding.char.j ||
+                      collider.isColliding.char.k)
+    if (collision)
     {
       this.delete();
       play("hit",{seed:1242,volume:.5})
@@ -430,6 +484,20 @@ var lateUpdateList = new Set();
 
 function start()
 {
+LightningBoltStats = 
+{
+  level : 1,
+  damage : 1,
+  count : 1,
+
+}
+bombStats = 
+{
+  level : 0,
+  damage : 1,
+  count : 0,
+
+}
   //reset values
   //aaaaaaa
   
@@ -529,36 +597,45 @@ function levelUp()
 
   currentXp = 0;
   levelUpAvailable = true;
+  const currMaxHp = myEnemySpawner.enemyHpMax;
   if (currentLevel < 3)
   {
-    levelUpXp = 5 * S.GOBLINSLEVEL3;
+    levelUpXp = currMaxHp * S.GOBLINSLEVEL3;
     return;
   }
   if (currentLevel < 10)
   {
-    levelUpXp = 5 * S.GOBLINSLEVEL10;
+    levelUpXp = currMaxHp * S.GOBLINSLEVEL10;
     return;
   }
   if (currentLevel < 20)
   {
-    levelUpXp = 5 * S.GOBLINSLEVEL20;
+    levelUpXp = currMaxHp * S.GOBLINSLEVEL20;
     return;
   }
-  levelUpXp = 5 * currentLevel * S.GOBLINSLEVEL50
-
+  levelUpXp = currMaxHp * currentLevel * S.GOBLINSLEVEL50
+  
 }
 
 function updateTower()
 {
  
-  let tower = char('d',G.WIDTH/2,G.HEIGHT/2 ,{scale : vec(3,3)})
+  color('black');
+  let collider = char('d',G.WIDTH/2,G.HEIGHT/2 ,{scale : vec(3,3)})
+  let collision = (collider.isColliding.char.a ||
+                    collider.isColliding.char.f ||
+                    collider.isColliding.char.h ||
+                    collider.isColliding.char.i ||
+                    collider.isColliding.char.j ||
+                    collider.isColliding.char.k)
+  
   //attack bar
+
+
   color('red')
   let barAmnt = (timeUntilattack/attackInterval) * (G.WIDTH-5)
   bar(G.WIDTH/2,13,barAmnt ,5,0)
-
-
-  if (tower.isColliding.char.a)//gamew over condition
+  if (collision)//gamew over condition
   {
     color("black")
     rect(G.WIDTH/2-40,G.HEIGHT/2-10,80,40)
@@ -596,6 +673,7 @@ function updateCards()
     console.log("added lightning attack")
     levelUpAvailable = false;
     play("powerUp",{seed:28315356323325232}) // power up choice
+    powerUpLightning();
 
   }
   color("black");
@@ -611,6 +689,7 @@ function updateCards()
     console.log("added bomb attack")
     levelUpAvailable = false;
     play("powerUp",{seed:28315356323325232}) // power up choice
+    powerUpBomb();
 
   }
   color("black");
@@ -626,12 +705,12 @@ function updateCards()
   if (collision3 && input.isJustPressed)//clicking this card
   {
     levelUpAvailable = false;
-    attackInterval -= S.ATTACKDOWNAMNT
+    attackInterval -= S.ATTACKDOWNAMNT;
     play("powerUp",{seed:28315356323325232}) // power up choice
 
-    if (attackInterval <= 0)
+    if (attackInterval <= S.LOWESTATTACKSPEED)
     {
-      attackInterval = .1
+      attackInterval = S.LOWESTATTACKSPEED
 
       
     }
@@ -639,6 +718,42 @@ function updateCards()
   }
   color("black");
   char('e',vec(cardPos3.x+10,cardPos3.y+9),{scale:vec(2,2)});
+}
+
+function powerUpLightning()
+{
+  
+  if (LightningBoltStats.level == 1)
+  {
+    LightningBoltStats.count += 1;
+  }
+  else if(LightningBoltStats.level % 6==0 && LightningBoltStats.count <=6)
+  {
+    LightningBoltStats.count +=1;
+  }
+  else
+  {
+    LightningBoltStats.damage += 1;
+  }
+  
+  LightningBoltStats.level += 1;
+}
+function powerUpBomb()
+{
+  if (bombStats.level == 1 || bombStats.level == 2 )
+  {
+    bombStats.count += 1;
+  }
+  else if (bombStats.level % 6 ==0 && bombStats.count <=6)
+  {
+    bombStats.count += 1;
+  }
+  else
+  {
+    bombStats.damage += 1;
+  }
+
+  bombStats.level += 1;
 }
 
 
@@ -653,22 +768,29 @@ function handleClicks()
 function fireProjectiles()
 {   //this will execute all of the attacks in the list
   //new LightningBolt(mousePosition)
-  let elementCount = 0;
-  attackList.forEach(element => {
-    switch(element)
-    {
-      case 1:
-        setTimeout(()=>{ new LightningBolt(mousePosition);},250 * elementCount)
-        break;
-      case 2:
-        setTimeout(()=>{ new bomb(mousePosition);},250 * elementCount)
-        break;
-    }
-    elementCount += 1;
-    
-  });
-
+  fireLightning();
+  fireBombs();
 }
+function fireLightning()
+{
+  let elementCount=0;
+  for(let i=0;i<LightningBoltStats.count;i++)
+  {
+    setTimeout(()=>{ new LightningBolt(mousePosition);},125 * elementCount)
+    elementCount += 1;
+
+  }
+}
+function fireBombs()
+{
+  let elementCount=0;
+  for(let i=0;i<bombStats.count;i++)
+  {
+    setTimeout(()=>{ new bomb(mousePosition);},125 * elementCount)
+    elementCount += 1;
+  }
+}
+
 
 function objectsUpdate()
 {
