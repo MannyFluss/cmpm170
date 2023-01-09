@@ -45,7 +45,7 @@ const S = //statboard
   ATTACKDOWNAMNT : .35,
   LOWESTATTACKSPEED : 1.5,
 
-  XPMULTIPLIERONDEATH : 5,
+  XPMULTIPLIERONDEATH : 4,
 
 
   GOBLINSLEVEL3 : 8,
@@ -61,6 +61,19 @@ const S = //statboard
   SPAWNINTERVALDOWN : .5,
   MINSPAWNINTERVAL : 1,
   MAXGOBLINSPAWN : 5,
+
+  
+
+  LIGHTNINGBOLTDMGMULTIPLIER : 4,
+  LIGHTNINGBOLTMAXPROJECTILES : 8,
+
+
+  BOMBDAMAGEMULTIPLIER : 1,
+  BOMBMAXPROJECTILES : 6,
+  BOMBMAXSPREAD : 10,
+  BOMBCIRCLERADIUS : 10,
+  BOMBEXPLOSIONSCALE : 3,
+
 
   SPRITELIST : ['a','f','h','i','j','k'],
 
@@ -218,6 +231,7 @@ class enemySpawner
     let min = Math.ceil(this.enemyHpMin);
     let max = Math.floor(this.enemyHpMax);
     let _hp = round(Math.random()*(max-min) + min);
+    
 
     const sprite = S.SPRITELIST[Math.floor(Math.random()*S.SPRITELIST.length)];
     new enemy(pos,_speed,_hp,sprite);
@@ -291,7 +305,7 @@ class enemySpawner
 
 class enemy
 {
-  constructor(_position = vec(0,0), _speed = .01, _hp = 5, _sprite = 'a')
+  constructor(_position = vec(0,0), _speed = .01, _hp = 5.0, _sprite = 'a')
   {
     //attributes
     this.speed = _speed
@@ -331,11 +345,12 @@ class enemy
     //this.collide = char(this.sprite,this.position).isColliding.char.b;
     if (lightningCollider)
     {
-      this.takeDamage(LightningBoltStats.damage);
+      this.takeDamage(LightningBoltStats.damage * S.LIGHTNINGBOLTDMGMULTIPLIER);
+     // console.log("taking damage")
     }
     if(bombCollider)
     {
-      this.takeDamage(bombStats.damage);
+      this.takeDamage(bombStats.damage * S.BOMBDAMAGEMULTIPLIER);
     }
     
 
@@ -343,6 +358,7 @@ class enemy
   takeDamage(_damage = 1)
   {
     this.hp -= _damage;
+    console.log(this.hp)
     color("red");
     particle(this.position,2,1)
     play("click",{seed:128965234234235}) //enemy gets hit
@@ -381,14 +397,14 @@ class bomb
     this.bombPosition.y = lerp(this.bombPosition.y,this.target.y,easeIn(this.timeElapsed/this.timeUntilImapct));
 
     char('c',this.bombPosition).isColliding.char.a
-    arc(this.target.x,this.target.y,6,1)
+    arc(this.target.x,this.target.y,S.BOMBCIRCLERADIUS,1)
     this.timeElapsed += .0166
 
     if (this.timeElapsed >= this.timeUntilImapct)
     {
       this.explode();
       this.offScreen();
-      char('g',this.bombPosition,{scale:vec(2,2)}).isColliding.char.a
+      char('g',this.bombPosition,{scale:vec(S.BOMBEXPLOSIONSCALE,S.BOMBEXPLOSIONSCALE)}).isColliding.char.a
     }
   }
 
@@ -413,7 +429,10 @@ class LightningBolt
   {
 
     this.target = _target;
-    this.targetAngle = Math.atan2(_target.y-G.HEIGHT/2, _target.x-G.WIDTH/2 )
+    // let num = Math.floor(Math.random()*2);
+    // num *= Math.round(Math.random()) ? 1 : -1;
+    this.targetAngle = Math.atan2(_target.y-G.HEIGHT/2, _target.x-G.WIDTH/2);
+    
     this.targetAngleVector = vec(Math.cos(this.targetAngle),Math.sin(this.targetAngle))
     updateList.add(this)//global list to update
     lateUpdateList.add(this)
@@ -548,7 +567,7 @@ function update()
     //char('e',G.WIDTH/2,G.HEIGHT/2 - 50,{scale : vec(3,3)})
     objectsUpdate()
 
-    handleClicks();
+    
 
     updateList.forEach(element => {
       element.update();
@@ -580,7 +599,7 @@ function update()
     let barAmnt = (currentXp/levelUpXp) * (G.WIDTH-10)
     bar(G.WIDTH/2  ,20,barAmnt ,10,0)
     color("black")
-    text("XP",G.WIDTH/2,20)
+    text("XP " + String(currentXp) +"/"+String(levelUpXp),G.WIDTH/2,20)
     //currentXp +=1;
     if (currentXp >= levelUpXp)//levle up
     {
@@ -727,7 +746,7 @@ function powerUpLightning()
   {
     LightningBoltStats.count += 1;
   }
-  else if(LightningBoltStats.level % 6==0 && LightningBoltStats.count <=6)
+  else if(LightningBoltStats.level % 6==0 && LightningBoltStats.count <= S.LIGHTNINGBOLTMAXPROJECTILES)
   {
     LightningBoltStats.count +=1;
   }
@@ -735,7 +754,6 @@ function powerUpLightning()
   {
     LightningBoltStats.damage += 1;
   }
-  
   LightningBoltStats.level += 1;
 }
 function powerUpBomb()
@@ -744,7 +762,7 @@ function powerUpBomb()
   {
     bombStats.count += 1;
   }
-  else if (bombStats.level % 6 ==0 && bombStats.count <=6)
+  else if (bombStats.level % 6 ==0 && bombStats.count <= S.BOMBMAXPROJECTILES)
   {
     bombStats.count += 1;
   }
@@ -757,13 +775,6 @@ function powerUpBomb()
 }
 
 
-function handleClicks()
-{
-  // if (input.isJustPressed)
-  // {
-  //   fireProjectiles()
-  // }
-}
 
 function fireProjectiles()
 {   //this will execute all of the attacks in the list
@@ -776,8 +787,54 @@ function fireLightning()
   let elementCount=0;
   for(let i=0;i<LightningBoltStats.count;i++)
   {
-    setTimeout(()=>{ new LightningBolt(mousePosition);},125 * elementCount)
+
+    let target = vec(mousePosition.x,mousePosition.y);
+    if(i%4==0)
+    {
+      console.log("nothing")
+      //do nothing
+    }
+    if((i+1)%4==0)
+    {
+      console.log("invert right")
+
+      //invert backwards
+      target.x -= G.WIDTH/2;
+      target.y -= G.HEIGHT/2;
+      let temp = target.x
+      target.x = target.y
+      target.y = -temp
+      target.x += G.WIDTH/2;
+      target.y += G.HEIGHT/2
+    }
+    if((i+2)%4==0)
+    {
+      console.log("invert left")
+      target.x -= G.WIDTH/2;
+      target.y -= G.HEIGHT/2;
+      let temp = target.x
+      target.x = -target.y
+      target.y = temp
+      target.x += G.WIDTH/2;
+      target.y += G.HEIGHT/2
+      //target.x = G.WIDTH - (mousePosition.x * 2)
+    }
+    if((i+3)%4==0)
+    {
+      console.log("invert backwards")
+      target.x -= G.WIDTH/2;
+      target.y -= G.HEIGHT/2;
+      target.x = -target.x
+      target.y = -target.y
+      target.x += G.WIDTH/2;
+      target.y += G.HEIGHT/2
+    }
+    setTimeout(()=>{ new LightningBolt(target);},125 * elementCount)
     elementCount += 1;
+
+  }
+  function helper()
+  {
 
   }
 }
@@ -786,7 +843,12 @@ function fireBombs()
   let elementCount=0;
   for(let i=0;i<bombStats.count;i++)
   {
-    setTimeout(()=>{ new bomb(mousePosition);},125 * elementCount)
+    let randomX= Math.floor(Math.random() * S.BOMBMAXSPREAD)*2 - S.BOMBMAXSPREAD;
+    let randomY = Math.floor(Math.random() * S.BOMBMAXSPREAD)*2 - S.BOMBMAXSPREAD;
+
+    let target = vec(mousePosition.x + randomX, mousePosition.y + randomY);
+
+    setTimeout(()=>{ new bomb(target);},125 * elementCount)
     elementCount += 1;
   }
 }
